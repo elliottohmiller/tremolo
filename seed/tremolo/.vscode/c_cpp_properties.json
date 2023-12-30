@@ -1,0 +1,47 @@
+{
+    "configurations": [
+        {
+            "cStandard": "c11",
+            "compilerPath": "arm-none-eabi-g++.exe",
+            "cppStandard": "c++17",
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/../../libDaisy//**",
+                "${workspaceFolder}/../../DaisySP//**",
+                "${workspaceFolder}/../../libDaisy/**"
+            ],
+            "name": "Win32",
+            "windowsSdkVersion": "10.0.17763.0"
+        },
+        {
+            "cStandard": "c11",
+            "compilerPath": "/usr/local/bin/arm-none-eabi-g++",
+            "cppStandard": "c++17",
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/../../libDaisy//**",
+                "${workspaceFolder}/../../DaisySP//**",
+                "${workspaceFolder}/../../libDaisy/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usb_cdc.h",
+                "${workspaceFolder}/../../libDaisy/src/reusable/source/**",
+                "/Users/elliottmiller/Projects/tremolo/libDaisy/Drivers/STM32H7xx_HAL_Driver/Inc",
+                "/Users/elliottmiller/Projects/tremolo/libDaisy/src",
+                "/Users/elliottmiller/Projects/tremolo/libDaisy/Middlewares/Third_Party/FatFs/src",
+                "/Users/elliottmiller/Projects/tremolo/libDaisy/src/sys",
+                "/Users/elliottmiller/Projects/tremolo/libDaisy/Drivers/CMSIS/Include",
+                "/Users/elliottmiller/Projects/tremolo/DaisySP/Source"
+            ],
+            "name": "macOS"
+        }
+    ],
+    "version": 4
+}
