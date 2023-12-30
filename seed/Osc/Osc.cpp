@@ -23,7 +23,7 @@ void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
     button1.Debounce();
 
     //If you push the button,...
-    if(button1.RisingEdge())
+ //   if(button1.RisingEdge())
     {
         env.Trigger(); //Trigger the envelope!
     }

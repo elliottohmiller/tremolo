@@ -22,10 +22,11 @@ void AudioCallback(AudioHandle::InputBuffer  in,
             trem.SetFreq(10.f * rand() * kRandFrac);
             trem.SetDepth(.3f + rand() * kRandFrac);
             env.Trigger();
-            osc.SetFreq(330.f * rand() * kRandFrac + 110.f);
+            osc.SetFreq(4800);
         }
 
-        out[0][i] = out[1][i] = trem.Process(osc.Process() * 1.f);
+        //out[0][i] = out[1][i] = trem.Process(osc.Process() * 1.f);
+        out[0][i] = out[1][i] = (osc.Process() * 1.f);
     }
 }
 
