@@ -249,7 +249,7 @@ int main(void)
     hw.usb_handle.Init(UsbHandle::FS_INTERNAL);
     HAL_Delay(1000); //allow serial communication setup time before first console message prints
 
-	ConsoleInit(); //initialize the CLI
+	//ConsoleInit(); //initialize the CLI
 
     trem.Init(hw.AudioSampleRate());
 
@@ -266,7 +266,7 @@ int main(void)
 
     while(1) {
 
-        ConsoleProcess();
+        //ConsoleProcess();
         System::Delay(1);
 
         if (tremShape.enc->FallingEdge() && System::GetNow() > pwmTimer)
