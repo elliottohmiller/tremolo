@@ -1,4 +1,26 @@
 #include "tremControls.hpp"
+#include "stdint.h"
+#include "bgMeter.hpp"
+
+uint32_t pwmTimer;
+uint32_t bgTimer;
+
+Encoder rateEnc, depthEnc, shape_pwmEnc;
+
+paramEncoder tremRate{&rateEnc, "rate", 1, MeterState::rateCV};
+paramEncoder tremDepth{&depthEnc, "depth", 10, MeterState::depthCV};
+paramEncoder tremShape{&shape_pwmEnc, "shape", 0, MeterState::shapeCV};
+paramEncoder tremPwm{&shape_pwmEnc, "pwm", 5, MeterState::pwmCV};
+
+typedef struct
+{
+    uint8_t* rateValue = &tremRate.value;
+    uint8_t* depthValue = &tremDepth.value;
+    uint8_t* shapeValue = &tremShape.value;
+    uint8_t* pwmValue = &tremPwm.value;
+} paramValues;
+
+paramValues encoderValues;
 
 void rateValChange(paramEncoder &rate, MeterState& bgMeterState, uint32_t& timer)
 {
@@ -22,7 +44,7 @@ void rateValChange(paramEncoder &rate, MeterState& bgMeterState, uint32_t& timer
                 hw.PrintLine("rate decreased to: %uHz\n", rate.value / 2);
             }
         }
-            bgMeterState = MeterState::rateCV;
+            bgMeterState = rate.meterState;
             timer = System::GetNow() + BGTIMER_K;
         break;
 
@@ -41,7 +63,7 @@ void rateValChange(paramEncoder &rate, MeterState& bgMeterState, uint32_t& timer
                 hw.PrintLine("rate increased to: %uHz\n", rate.value / 2);
             }
         }
-        bgMeterState = MeterState::rateCV;
+        bgMeterState = rate.meterState;
         timer = System::GetNow() + BGTIMER_K;
         break;
 
@@ -63,7 +85,7 @@ void depthValChange(paramEncoder &depth, MeterState& bgMeterState, uint32_t& tim
             trem.SetDepth((depth.value/10.F)); 
             hw.PrintLine("depth decreased to: %u0%%\n", depth.value);
         }
-        bgMeterState = MeterState::depthCV;
+        bgMeterState = depth.meterState;
         timer = System::GetNow() + BGTIMER_K;
         
         break;
@@ -75,7 +97,7 @@ void depthValChange(paramEncoder &depth, MeterState& bgMeterState, uint32_t& tim
             trem.SetDepth((depth.value/10.F));
             hw.PrintLine("depth increased to: %u0%%\n", depth.value);
         }
-        bgMeterState = MeterState::depthCV;
+        bgMeterState = depth.meterState;
         timer = System::GetNow() + BGTIMER_K;
         break;
 
@@ -124,7 +146,7 @@ void shapeValChange(paramEncoder &shape, MeterState& bgMeterState, uint32_t& tim
             trem.SetWaveform((shape.value));
             printShape(shape);
         }
-        bgMeterState = MeterState::shapeCV; 
+        bgMeterState = shape.meterState; 
         timer = System::GetNow() + BGTIMER_K;
         break;
 
@@ -135,7 +157,7 @@ void shapeValChange(paramEncoder &shape, MeterState& bgMeterState, uint32_t& tim
             trem.SetWaveform((shape.value));
             printShape(shape);
         }
-        bgMeterState = MeterState::shapeCV; 
+        bgMeterState = shape.meterState; 
         timer = System::GetNow() + BGTIMER_K;
         break;
 
@@ -163,7 +185,7 @@ void pwmValChange(paramEncoder &pwm, MeterState& bgMeterState, uint32_t& bgtimer
             trem.SetPw((pwm.value / 10.f));
             hw.PrintLine("pwm decreased to: %u0%%\n", pwm.value); 
         }
-        bgMeterState = MeterState::pwmCV; 
+        bgMeterState = pwm.meterState; 
         bgtimer = System::GetNow() + PWMTIMER_K;
         pwmTimer = System::GetNow() + PWMTIMER_K;
 
@@ -176,7 +198,7 @@ void pwmValChange(paramEncoder &pwm, MeterState& bgMeterState, uint32_t& bgtimer
             trem.SetPw((pwm.value / 10.f));
             hw.PrintLine("pwm increased to: %u0%%\n", pwm.value);
         }
-        bgMeterState = MeterState::pwmCV; 
+        bgMeterState = pwm.meterState; 
         bgtimer = System::GetNow() + PWMTIMER_K;
         pwmTimer = System::GetNow() + PWMTIMER_K;
         break;

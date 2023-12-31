@@ -12,6 +12,10 @@ using namespace daisysp;
 
 #define PWMTIMER_K 2500
 
+uint32_t pwmTimer = System::GetNow();
+uint32_t bgTimer = System::GetNow();
+MeterState bgMeterState = MeterState::tremoloCV;
+
 void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                    daisy::AudioHandle::OutputBuffer out,
                    size_t                    size)
@@ -27,7 +31,6 @@ void AudioCallback(daisy::AudioHandle::InputBuffer  in,
 void rateValChange(paramEncoder &rate, MeterState& bgMeterState, uint32_t& timer)
 {
     rate.enc->Debounce();
-    float rateInHz;
 
     switch (rate.enc->Increment())
     {
@@ -35,8 +38,6 @@ void rateValChange(paramEncoder &rate, MeterState& bgMeterState, uint32_t& timer
         if (rate.value > 1)
         {
             --rate.value;
-            rateInHz = rate.value / 2.f;
-            trem.SetFreq(rateInHz);
             if ((rate.value%2))
             {
                 hw.PrintLine("rate decreased to: %u.5Hz\n", rate.value / 2);
@@ -54,8 +55,6 @@ void rateValChange(paramEncoder &rate, MeterState& bgMeterState, uint32_t& timer
         if (rate.value < 20.0)
         {
             ++rate.value;
-            rateInHz = rate.value / 2.f;
-            trem.SetFreq(rateInHz);
             if ((rate.value%2))
             {
                 hw.PrintLine("rate increased to: %u.5Hz\n", rate.value / 2);
@@ -84,7 +83,6 @@ void depthValChange(paramEncoder &depth, MeterState& bgMeterState, uint32_t& tim
         if (depth.value > 0)
         {
             --depth.value;
-            trem.SetDepth((depth.value/10.F)); 
             hw.PrintLine("depth decreased to: %u0%%\n", depth.value);
         }
         bgMeterState = MeterState::depthCV;
@@ -96,7 +94,6 @@ void depthValChange(paramEncoder &depth, MeterState& bgMeterState, uint32_t& tim
         if (depth.value < 10)
         {
             ++depth.value;
-            trem.SetDepth((depth.value/10.F));
             hw.PrintLine("depth increased to: %u0%%\n", depth.value);
         }
         bgMeterState = MeterState::depthCV;
@@ -145,7 +142,6 @@ void shapeValChange(paramEncoder &shape, MeterState& bgMeterState, uint32_t& tim
         if (shape.value > 0)
         {
             --shape.value;
-            trem.SetWaveform((shape.value));
             printShape(shape);
         }
         bgMeterState = MeterState::shapeCV; 
@@ -156,7 +152,6 @@ void shapeValChange(paramEncoder &shape, MeterState& bgMeterState, uint32_t& tim
         if (shape.value < 4)
         {
             ++shape.value;
-            trem.SetWaveform((shape.value));
             printShape(shape);
         }
         bgMeterState = MeterState::shapeCV; 
@@ -168,9 +163,9 @@ void shapeValChange(paramEncoder &shape, MeterState& bgMeterState, uint32_t& tim
     }
 }
 
-void pwmValChange(paramEncoder &pwm, MeterState& bgMeterState, uint32_t& bgtimer, uint32_t& pwmTimer, bool& pwmSwitch)
+void pwmValChange(paramEncoder &pwm, MeterState& bgMeterState, uint32_t& bgtimer, uint32_t& pwmTimer)
 {
-    if (pwmSwitch)
+    if (tremPwm.button)
     {
         bgMeterState = MeterState::pwmCV; 
         bgtimer = System::GetNow() + PWMTIMER_K;
@@ -184,7 +179,6 @@ void pwmValChange(paramEncoder &pwm, MeterState& bgMeterState, uint32_t& bgtimer
         if (pwm.value > 1)
         {
             --pwm.value;
-            trem.SetPw((pwm.value / 10.f));
             hw.PrintLine("pwm decreased to: %u0%%\n", pwm.value); 
         }
         bgMeterState = MeterState::pwmCV; 
@@ -197,7 +191,6 @@ void pwmValChange(paramEncoder &pwm, MeterState& bgMeterState, uint32_t& bgtimer
         if (pwm.value < 9)
         {
             ++pwm.value;
-            trem.SetPw((pwm.value / 10.f));
             hw.PrintLine("pwm increased to: %u0%%\n", pwm.value);
         }
         bgMeterState = MeterState::pwmCV; 
@@ -209,7 +202,6 @@ void pwmValChange(paramEncoder &pwm, MeterState& bgMeterState, uint32_t& bgtimer
         break;
     }
 }
-
 
 void spiConfig(SpiHandle::Config &spi_conf)
 {
@@ -223,21 +215,46 @@ void spiConfig(SpiHandle::Config &spi_conf)
     spi_conf.pin_config.nss = Pin();
 }
 
-uint8_t getCV(MeterState& bgMeterState, paramValues& cv)
+uint8_t getCV(MeterState& bgMeterState, paramValues& cv,  Tremolo trem)
 {
     switch(bgMeterState)
     {
-        case MeterState::rateCV: return *cv.rateValue / 2;
-        case MeterState::depthCV: return *cv.depthValue;
-        case MeterState::shapeCV: return (*cv.shapeValue);
-        case MeterState::pwmCV: return *cv.pwmValue;
+        case MeterState::tremoloCV: return (static_cast<uint8_t>((trem.Process(1) + CV_BIAS) * TREM_CV_SCALER));
+        case MeterState::rateCV:   return *cv.rateValue / 2;
+        case MeterState::depthCV:  return *cv.depthValue;
+        case MeterState::shapeCV:  return *cv.shapeValue;
+        case MeterState::pwmCV:    return *cv.pwmValue;
         default : return 0;
     }   
 }
-void updateLEDs()
-{
 
+void pwmModeSwitch()
+{
+    if  (tremShape.enc->FallingEdge() && System::GetNow() > pwmTimer)
+    {
+        tremPwm.button = 1;
+        pwmValChange(tremPwm, bgMeterState, bgTimer, pwmTimer);
+        hw.PrintLine("mode: %u\n", tremPwm.button);
+        tremPwm.button = 0;
+    }
+    else if (tremShape.enc->FallingEdge() && (System::GetNow() < pwmTimer))
+    {
+        pwmTimer = 0;
+        bgTimer = 0;
+        hw.PrintLine("mode: %u\n", tremPwm.button);
+        bgMeterState = MeterState::tremoloCV;
+    }
 }
+
+void setTrem(Tremolo& trem, paramValues& tremEncoders)
+{
+    trem.SetFreq(*tremEncoders.rateValue / 2.f);
+    trem.SetDepth(*tremEncoders.depthValue / 10.f);
+    trem.SetWaveform(*tremEncoders.shapeValue);
+    trem.SetPw(*tremEncoders.pwmValue / 10.f);
+}
+
+
 
 int main(void)
 {
@@ -258,61 +275,40 @@ int main(void)
     shape_pwmEnc.Init(seed::D19, seed::D20, seed::D21);
 
     hw.StartAudio(AudioCallback);
-    bool pwmSwitch = 0;
-    uint8_t cv;
-    uint32_t pwmTimer = System::GetNow();
-    uint32_t bgTimer = System::GetNow();
-    MeterState bgMeterState = MeterState::tremoloCV;
 
     while(1) {
 
         ConsoleProcess();
         System::Delay(1);
-
-        if (tremShape.enc->FallingEdge() && System::GetNow() > pwmTimer)
-        {
-            pwmSwitch = 1;
-            pwmValChange(tremPwm, bgMeterState, bgTimer, pwmTimer, pwmSwitch);
-            hw.PrintLine("mode: %u\n", pwmSwitch);
-            pwmSwitch = 0;
-        }
-        else if (tremShape.enc->FallingEdge() && (System::GetNow() < pwmTimer))
-        {
-            pwmTimer = 0;
-            bgTimer = 0;
-            hw.PrintLine("mode: %u\n", pwmSwitch);
-            bgMeterState = MeterState::tremoloCV;
-        }
+        setTrem(trem, encoderValues);
         //update control values
+        pwmModeSwitch();
         rateValChange(tremRate, bgMeterState, bgTimer);
         depthValChange(tremDepth, bgMeterState, bgTimer);
 
-        if ((System::GetNow() < pwmTimer))
+        if ((System::GetNow() < pwmTimer)) //if pwmTimer hasn't elapsed, we're in pwm mode
         {
-            pwmValChange(tremPwm, bgMeterState, bgTimer, pwmTimer, pwmSwitch);
+            pwmValChange(tremPwm, bgMeterState, bgTimer, pwmTimer);
         }
-        else if (System::GetNow() > pwmTimer)
+        else 
         {
-            pwmSwitch = 0;
+            tremPwm.button = 0;
             shapeValChange(tremShape, bgMeterState, bgTimer);
         }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        if (!(System::GetNow() < bgTimer) && (!bgMeterState)) //output normal trem CV on meter
+        if (System::GetNow() > bgTimer) //bgTimer has elapsed; display trem CV on meter
         {
-            cv = static_cast<uint8_t>((trem.Process(1) + CV_BIAS) * TREM_CV_SCALER);
-            bgMeterWrite(spi_handle, cv);
-        }
-        else if (bgMeterState == MeterState::shapeCV) //display shape indicator
-        {
-            cv = getCV(bgMeterState, menuValues);
-            shapeIndicatorWrite(spi_handle, cv); //call specific write function
             bgMeterState = MeterState::tremoloCV;
         }
-        else if (bgMeterState) //display parameter value
+
+        if (bgMeterState == MeterState::shapeCV) //display shape indicator
         {
-            cv = getCV(bgMeterState, menuValues);
-            bgMeterWrite(spi_handle, cv);
-            bgMeterState = MeterState::tremoloCV;
+            shapeIndicatorWrite(spi_handle, getCV(bgMeterState, encoderValues, trem)); //call specific write function
+        }
+        else //display another value indicator 
+        {
+            bgMeterWrite(spi_handle, getCV(bgMeterState, encoderValues, trem));
         }
 
 
