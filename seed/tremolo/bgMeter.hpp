@@ -12,7 +12,6 @@
 using namespace daisy;
 using namespace daisysp;
 
-
 void bgMeterWrite(SpiHandle &spi_handle, uint8_t controlSig);
 void shapeIndicatorWrite(SpiHandle &spi_handle, uint8_t controlSig);
 
@@ -26,5 +25,12 @@ enum MeterState
 
     maxMeterState
 };
+
+typedef struct
+{
+    uint32_t pwmTimer = System::GetNow();
+    uint32_t bgTimer = System::GetNow();
+    MeterState bgMeterState = MeterState::tremoloCV;
+} MeterControl;
 
 #endif

@@ -15,7 +15,6 @@ DaisySeed hw;
 Tremolo trem;
 Encoder rateEnc, depthEnc, shape_pwmEnc;
 //BGMeter meter; placeholder for LED BG Meter handle
-
 SpiHandle spi_handle;
 SpiHandle::Config spi_conf;
 
@@ -34,10 +33,10 @@ paramEncoder tremPwm{&shape_pwmEnc, "pwm", 5, 0};
 
 typedef struct
 {
-    const paramEncoder* rate = &tremRate;
-    const paramEncoder* depth = &tremDepth;
-    const paramEncoder* shape = &tremShape;
-    const paramEncoder* pwm = &tremPwm;
+    paramEncoder* rate = &tremRate;
+    paramEncoder* depth = &tremDepth;
+    paramEncoder* shape = &tremShape;
+    paramEncoder* pwm = &tremPwm;
 
 } encoderSet;
 
