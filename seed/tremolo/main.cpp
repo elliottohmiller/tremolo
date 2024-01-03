@@ -6,10 +6,11 @@
 #include "per/spi.h"
 #include <cmath> //for round();
 #include "bgMeter.hpp"
+#include "interrupt.hpp"
 
 using namespace daisy;
 using namespace daisysp;
-
+    
 #define PWMTIMER_K 2500
 
 void AudioCallback(daisy::AudioHandle::InputBuffer  in,
@@ -184,9 +185,9 @@ void shapeValChange(paramEncoder &shape, MeterControl& meterController)
     }
 }
 
-void pwmValChange(paramEncoder &pwm, MeterControl& meterController)
+void pwmValChange(encoderSet &tremEncoders, MeterControl& meterController)
 {
-    if (tremPwm.button)
+    if (tremEncoders.pwm->button)
     {
         meterController.bgMeterState = MeterState::pwmCV; 
         meterController.bgTimer = System::GetNow() + PWMTIMER_K;
@@ -194,14 +195,14 @@ void pwmValChange(paramEncoder &pwm, MeterControl& meterController)
     }
     if (System::GetNow() < meterController.pwmTimer)
     {
-        pwm.enc->Debounce();
-        switch (pwm.enc->Increment())
+        tremEncoders.pwm->enc->Debounce();
+        switch (tremEncoders.pwm->enc->Increment())
         {
             case -1: 
-            if (pwm.value > 1)
+            if (tremEncoders.pwm->value > 1)
             {
-                --pwm.value;
-                hw.PrintLine("pwm decreased to: %u0%%\n", pwm.value); 
+                --tremEncoders.pwm->value;
+                hw.PrintLine("pwm decreased to: %u0%%\n", tremEncoders.pwm->value); 
             }
             meterController.bgMeterState = MeterState::pwmCV; 
             meterController.bgTimer = System::GetNow() + PWMTIMER_K;
@@ -210,10 +211,10 @@ void pwmValChange(paramEncoder &pwm, MeterControl& meterController)
             break;
 
             case +1: 
-            if (pwm.value < 9)
+            if (tremEncoders.pwm->value < 9)
             {
-                ++pwm.value;
-                hw.PrintLine("pwm increased to: %u0%%\n", pwm.value);
+                ++tremEncoders.pwm->value;
+                hw.PrintLine("pwm increased to: %u0%%\n", tremEncoders.pwm->value);
             }
             meterController.bgMeterState = MeterState::pwmCV; 
             meterController.bgTimer = System::GetNow() + PWMTIMER_K;
@@ -226,21 +227,21 @@ void pwmValChange(paramEncoder &pwm, MeterControl& meterController)
     }
     else 
     {
-        tremPwm.button = 0;
-        shapeValChange(tremShape, meterController);
+        tremEncoders.pwm->button = 0;
+        shapeValChange(*tremEncoders.shape, meterController);
     }
 }
 
-void pwmModeSwitch(MeterControl& meterController)
+void pwmModeSwitch(encoderSet& tremEncoders, MeterControl& meterController)
 {
-    if  (tremShape.enc->FallingEdge() && System::GetNow() > meterController.pwmTimer)
+    if  (tremEncoders.shape->enc->FallingEdge() && System::GetNow() > meterController.pwmTimer)
     {
-        tremPwm.button = 1;
-        pwmValChange(tremPwm, meterController);
-        hw.PrintLine("mode: %u\n", tremPwm.button);
-        tremPwm.button = 0;
+        tremEncoders.pwm->button = 1;
+        pwmValChange(tremEncoders, meterController);
+        hw.PrintLine("mode: %u\n", tremEncoders.pwm->button);
+        tremEncoders.pwm->button = 0;
     }
-    else if (tremShape.enc->FallingEdge() && (System::GetNow() < meterController.pwmTimer))
+    else if (tremEncoders.shape->enc->FallingEdge() && (System::GetNow() < meterController.pwmTimer))
     {
         meterController.pwmTimer = 0;
         meterController.bgTimer = 0;
@@ -259,10 +260,10 @@ void setTrem(Tremolo& trem, paramValues& tremEncoders)
 
 void readControls(encoderSet& tremEncoders, MeterControl& meterController)
 {
-    pwmModeSwitch(meterController);
+    pwmModeSwitch(tremEncoders, meterController);
     rateValChange(*tremEncoders.rate, meterController);
     depthValChange(*tremEncoders.depth, meterController);
-    pwmValChange(*tremEncoders.pwm, meterController);
+    pwmValChange(tremEncoders, meterController);
 }
 
 void updateDisplay(SpiHandle& spi_handle, MeterControl& meterController, paramValues& encoderValues, const Tremolo& trem)
@@ -282,6 +283,11 @@ void updateDisplay(SpiHandle& spi_handle, MeterControl& meterController, paramVa
     }
 }
 
+void gpioInterruptCallback()
+{
+    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
+}
+
 int main(void)
 {
 
@@ -289,6 +295,26 @@ int main(void)
     spiConfig(spi_conf);
     spi_handle.Init(spi_conf);
     MeterControl meterController;
+
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    GPIO_InitStruct.Pin = GPIO_PIN_0;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = GPIO_PIN_1;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    std::function<void(void)> gpio_callback = gpioInterruptCallback;
+
+    stm32_interrupt_enable(GPIOA, GPIO_PIN_1, gpio_callback, GPIO_MODE_IT_FALLING);
 
     hw.usb_handle.Init(UsbHandle::FS_INTERNAL);
     HAL_Delay(1000); //allow serial communication setup time before first console message prints

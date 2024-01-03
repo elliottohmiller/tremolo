@@ -2,7 +2,7 @@
 TARGET = tremolo
 
 # Sources
-CPP_SOURCES = main.cpp bgMeter.cpp
+CPP_SOURCES = main.cpp bgMeter.cpp interrupt.cpp
 
 # Library Locations
 LIBDAISY_DIR = ../../libDaisy/

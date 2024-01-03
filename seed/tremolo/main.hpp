@@ -18,6 +18,8 @@ Encoder rateEnc, depthEnc, shape_pwmEnc;
 SpiHandle spi_handle;
 SpiHandle::Config spi_conf;
 
+GPIO_TypeDef myButton;
+
 struct paramEncoder
 {
     Encoder* enc;
@@ -49,6 +51,7 @@ typedef struct
 } paramValues;
 
 encoderSet tremEncoders;
+
 paramValues encoderValues;
 
 
