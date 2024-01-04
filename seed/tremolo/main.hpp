@@ -25,7 +25,7 @@ struct paramEncoder
     Encoder* enc;
     uint8_t name[10];
     uint8_t value;
-    bool button;
+    volatile bool button;
 };
 
 paramEncoder tremRate{&rateEnc, "rate", 1};

@@ -225,7 +225,7 @@ void pwmValChange(encoderSet &tremEncoders, MeterControl& meterController)
             break;
         }
     }
-    else 
+    else  //if timer lapsed reset button
     {
         tremEncoders.pwm->button = 0;
         shapeValChange(*tremEncoders.shape, meterController);
@@ -234,19 +234,19 @@ void pwmValChange(encoderSet &tremEncoders, MeterControl& meterController)
 
 void pwmModeSwitch(encoderSet& tremEncoders, MeterControl& meterController)
 {
-    if  (tremEncoders.shape->enc->FallingEdge() && System::GetNow() > meterController.pwmTimer)
+    if  (tremEncoders.pwm->button && System::GetNow() > meterController.pwmTimer)
     {
-        tremEncoders.pwm->button = 1;
         pwmValChange(tremEncoders, meterController);
         hw.PrintLine("mode: %u\n", tremEncoders.pwm->button);
         tremEncoders.pwm->button = 0;
     }
-    else if (tremEncoders.shape->enc->FallingEdge() && (System::GetNow() < meterController.pwmTimer))
+    else if (tremEncoders.pwm->button && (System::GetNow() < meterController.pwmTimer))
     {
         meterController.pwmTimer = 0;
         meterController.bgTimer = 0;
-        hw.PrintLine("mode: %u\n", tremPwm.button);
+        tremEncoders.pwm->button = 0;
         meterController.bgMeterState = MeterState::tremoloCV;
+        hw.PrintLine("mode: %u\n", tremPwm.button);
     }
 }
 
@@ -283,9 +283,22 @@ void updateDisplay(SpiHandle& spi_handle, MeterControl& meterController, paramVa
     }
 }
 
+void initGPIO()
+{
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    GPIO_InitStruct.Pin = GPIO_PIN_4;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct); //init PA4 (D23 on  Daisy)
+
+}
+
 void gpioInterruptCallback()
 {
-    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
+    tremPwm.button = 1;
 }
 
 int main(void)
@@ -295,26 +308,10 @@ int main(void)
     spiConfig(spi_conf);
     spi_handle.Init(spi_conf);
     MeterControl meterController;
-
-    GPIO_InitTypeDef GPIO_InitStruct;
-
-    GPIO_InitStruct.Pin = GPIO_PIN_0;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = GPIO_PIN_1;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
     std::function<void(void)> gpio_callback = gpioInterruptCallback;
 
-    stm32_interrupt_enable(GPIOA, GPIO_PIN_1, gpio_callback, GPIO_MODE_IT_FALLING);
+    initGPIO();
+    stm32_interrupt_enable(GPIOA, GPIO_PIN_4, gpio_callback, GPIO_MODE_IT_FALLING);  //interrupt on  falling edge
 
     hw.usb_handle.Init(UsbHandle::FS_INTERNAL);
     HAL_Delay(1000); //allow serial communication setup time before first console message prints
