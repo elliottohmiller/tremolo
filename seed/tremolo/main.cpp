@@ -1,10 +1,4 @@
 #include "main.hpp"
-#include "daisy_seed.h"
-#include "daisysp.h"
-//#include "reusable/console.h" ->added to libDaisy
-#include <stm32h7xx_hal.h> //for HAL_Delay()
-#include "per/spi.h"
-#include <cmath> //for round();
 #include "bgMeter.hpp"
 #include "interrupt.hpp"
 
