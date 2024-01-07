@@ -2,8 +2,8 @@
 
 ## Author
 
-<!-- Elliott Miller -->
+Elliott Miller
 
 ## Description
 
-<!-- Tremolo FX processor for MES final project -->
+Tremolo FX processor for MES final project

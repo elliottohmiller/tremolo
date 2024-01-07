@@ -11,6 +11,12 @@ Included are:
 Electro-Smith's "libDaisy" and "DaisySP" hardware and dsp libraries + build scripts. 
 Tremolo project files located in tremolo/seed/tremolo.
 
+All files found in tremolo/seed/tremolo are original and copyright elliottohmiller with the exception of "interrupt.cpp," which is modified source code copied from stm32duino: https://github.com/stm32duino/Arduino_Core_STM32/blob/main/libraries/SrcWrapper/src/stm32/interrupt.cpp
+
+Edits were made by elliottohmiller to libDaisy/src/usbd/usb_cdc_if.c and libDaisy/src/reusable to accommodate read/write commands over the virtual COM port. 
+Edits were also made by elliottohmiller to DaisySP/Source/Effects/tremolo.cpp to filter control voltage waveforms. 
+Finally, libDaisy/src/reusable was added to the libDaisy build as an experiment in using CMake and Make. As a result, some Cmakelists.txt and Makefile docs were edited. 
+
 ## BUILD INSTRUCTIONS
 
 ### Getting the Source
