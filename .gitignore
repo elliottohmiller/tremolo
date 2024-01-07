@@ -130,4 +130,8 @@ vs/*.log
 MyProjects/
 .cortex-debug.registers.state.json
 .cortex-debug.peripherals.state.json
+patch
+patch_sm
+petal
+pod
 
