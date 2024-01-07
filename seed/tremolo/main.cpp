@@ -7,6 +7,7 @@ using namespace daisysp;
     
 #define PWMTIMER_K 2500
 
+//called at DMA interrupt
 void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                    daisy::AudioHandle::OutputBuffer out,
                    size_t                    size)
@@ -19,6 +20,7 @@ void AudioCallback(daisy::AudioHandle::InputBuffer  in,
     }
 }
 
+//config daisy pins for SPI COPI only
 void spiConfig(SpiHandle::Config &spi_conf)
 {
     spi_conf.periph = SpiHandle::Config::Peripheral::SPI_1;
@@ -31,6 +33,7 @@ void spiConfig(SpiHandle::Config &spi_conf)
     spi_conf.pin_config.nss = Pin();
 }
 
+//change bg meter state variable
 uint8_t getCV(MeterState& bgMeterState, paramValues& cv,  Tremolo trem)
 {
     switch(bgMeterState)
@@ -44,6 +47,7 @@ uint8_t getCV(MeterState& bgMeterState, paramValues& cv,  Tremolo trem)
     }   
 }
 
+//reads rate encoder and logs the change to trem parameters
 void rateValChange(paramEncoder &rate, MeterControl& meterController)
 {
     rate.enc->Debounce();
@@ -89,7 +93,7 @@ void rateValChange(paramEncoder &rate, MeterControl& meterController)
     }
 
 }
-
+//reads depth encoder and logs the change to trem parameters
 void depthValChange(paramEncoder &depth, MeterControl& meterController)
 {
     depth.enc->Debounce();
@@ -121,7 +125,7 @@ void depthValChange(paramEncoder &depth, MeterControl& meterController)
     }
 
 }
-
+//for logging
 void printShape(paramEncoder &shape)
 {
     switch (shape.value)
@@ -148,7 +152,7 @@ void printShape(paramEncoder &shape)
         break;
     }
 }
-
+//reads shape encoder and logs the change to trem parameters
 void shapeValChange(paramEncoder &shape, MeterControl& meterController)
 {
     shape.enc->Debounce();
@@ -178,7 +182,7 @@ void shapeValChange(paramEncoder &shape, MeterControl& meterController)
         break;
     }
 }
-
+//reads pwm encoder and logs the change to trem parameters
 void pwmValChange(encoderSet &tremEncoders, MeterControl& meterController)
 {
     if (tremEncoders.pwm->button)
@@ -225,7 +229,7 @@ void pwmValChange(encoderSet &tremEncoders, MeterControl& meterController)
         shapeValChange(*tremEncoders.shape, meterController);
     }
 }
-
+//check shared switch variable to get encoder state
 void pwmModeSwitch(encoderSet& tremEncoders, MeterControl& meterController)
 {
     if  (tremEncoders.pwm->button && System::GetNow() > meterController.pwmTimer)
@@ -243,7 +247,7 @@ void pwmModeSwitch(encoderSet& tremEncoders, MeterControl& meterController)
         hw.PrintLine("mode: %u\n", tremPwm.button);
     }
 }
-
+//update trem parameters from encoder values
 void setTrem(Tremolo& trem, paramValues& tremEncoders)
 {
     trem.SetFreq(*tremEncoders.rateValue / 2.f);
@@ -251,7 +255,7 @@ void setTrem(Tremolo& trem, paramValues& tremEncoders)
     trem.SetWaveform(*tremEncoders.shapeValue);
     trem.SetPw(*tremEncoders.pwmValue / 10.f);
 }
-
+//calls  individual read functions
 void readControls(encoderSet& tremEncoders, MeterControl& meterController)
 {
     pwmModeSwitch(tremEncoders, meterController);
@@ -259,7 +263,7 @@ void readControls(encoderSet& tremEncoders, MeterControl& meterController)
     depthValChange(*tremEncoders.depth, meterController);
     pwmValChange(tremEncoders, meterController);
 }
-
+//calls bgmeter display driver function based on meter state
 void updateDisplay(SpiHandle& spi_handle, MeterControl& meterController, paramValues& encoderValues, const Tremolo& trem)
 {
     if (System::GetNow() > meterController.bgTimer) //bgTimer has elapsed; display trem CV on meter
@@ -276,7 +280,7 @@ void updateDisplay(SpiHandle& spi_handle, MeterControl& meterController, paramVa
         bgMeterWrite(spi_handle, getCV(meterController.bgMeterState, encoderValues, trem));
     }
 }
-
+//explicit init for pwm button interrupt
 void initGPIO()
 {
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -289,7 +293,7 @@ void initGPIO()
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct); //init PA4 (D23 on  Daisy)
 
 }
-
+//pwm button cb
 void gpioInterruptCallback()
 {
     tremPwm.button = 1;
@@ -302,12 +306,12 @@ int main(void)
     spiConfig(spi_conf);
     spi_handle.Init(spi_conf);
     MeterControl meterController;
-    std::function<void(void)> gpio_callback = gpioInterruptCallback;
+    std::function<void(void)> gpio_callback = gpioInterruptCallback; //used for pwm button interrupt
 
     initGPIO();
-    stm32_interrupt_enable(GPIOA, GPIO_PIN_4, gpio_callback, GPIO_MODE_IT_FALLING);  //interrupt on  falling edge
+    stm32_interrupt_enable(GPIOA, GPIO_PIN_4, gpio_callback, GPIO_MODE_IT_FALLING);  //config'd to interrupt on  falling edge
 
-    hw.usb_handle.Init(UsbHandle::FS_INTERNAL);
+    hw.usb_handle.Init(UsbHandle::FS_INTERNAL); //used in all console communications and logging outputs
     HAL_Delay(1000); //allow serial communication setup time before first console message prints
 
 	ConsoleInit(); //initialize the CLI
@@ -318,7 +322,7 @@ int main(void)
     depthEnc.Init(seed::D17, seed::D18, Pin());
     shape_pwmEnc.Init(seed::D19, seed::D20, seed::D21);
 
-    hw.StartAudio(AudioCallback);
+    hw.StartAudio(AudioCallback); //start audio DMA transfers
 
     while(1) {
 

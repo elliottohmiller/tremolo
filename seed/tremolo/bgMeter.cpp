@@ -1,3 +1,36 @@
+/*
+These TLC59711 write functions take heavy inspiration from Adafruit's https://github.com/adafruit/Adafruit_TLC59711
+Adafruit's license is included below: 
+
+Software License Agreement (BSD License)
+
+Copyright (c) 2012, Adafruit Industries
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+3. Neither the name of the copyright holders nor the
+names of its contributors may be used to endorse or promote products
+derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*/
+
 #include "bgMeter.hpp"
 
 void bgMeterWrite(SpiHandle &spi_handle, uint8_t controlSig)
@@ -23,16 +56,6 @@ void bgMeterWrite(SpiHandle &spi_handle, uint8_t controlSig)
     command <<= 7;
     command |= BCr;
 
-    //noInterrupts();
-
-    /*_spi_dev->beginTransaction();
-
-        _spi_dev->transfer(command >> 24);
-        _spi_dev->transfer(command >> 16);
-        _spi_dev->transfer(command >> 8);
-        _spi_dev->transfer(command);
-    */
-
     uint8_t cmdBfr[4];
     cmdBfr[0] = command >> 24;
     cmdBfr[1] = command >> 16;
@@ -44,15 +67,6 @@ void bgMeterWrite(SpiHandle &spi_handle, uint8_t controlSig)
     uint8_t pwmBfr[2]; //container for the 16bit LED PWM value for each of the 12 channels
 
     uint8_t ledCv = controlSig;
-
-/*
-    static uint32_t bgPrintTimer = hw.system.GetNow();
-    if ((hw.system.GetNow() - bgPrintTimer) > 1000)
-    {
-        hw.PrintLine("%d\n", ledCv);
-        bgPrintTimer = hw.system.GetNow();
-    }
-*/ //debug print
     
     uint8_t remainingLeds = (12 - ledCv);
 
@@ -69,13 +83,10 @@ void bgMeterWrite(SpiHandle &spi_handle, uint8_t controlSig)
         
             spi_handle.BlockingTransmit(pwmBfr, 2);
 
-        //_spi_dev->transfer(pwmbuffer[12 + c] >> 8);
-        //_spi_dev->transfer(pwmbuffer[12 + c]);
         }
 
 
     System::DelayUs(200);
-    //_spi_dev->endTransaction();
 }
 
 void shapeIndicatorWrite(SpiHandle &spi_handle, uint8_t controlSig)
@@ -101,16 +112,6 @@ void shapeIndicatorWrite(SpiHandle &spi_handle, uint8_t controlSig)
     command <<= 7;
     command |= BCr;
 
-    //noInterrupts();
-
-    /*_spi_dev->beginTransaction();
-
-        _spi_dev->transfer(command >> 24);
-        _spi_dev->transfer(command >> 16);
-        _spi_dev->transfer(command >> 8);
-        _spi_dev->transfer(command);
-    */
-
     uint8_t cmdBfr[4];
     cmdBfr[0] = command >> 24;
     cmdBfr[1] = command >> 16;
@@ -120,16 +121,6 @@ void shapeIndicatorWrite(SpiHandle &spi_handle, uint8_t controlSig)
     spi_handle.BlockingTransmit(cmdBfr, 4);
 
     uint8_t pwmBfr[2]; //container for the 16bit LED PWM value for each of the 12 channels
-
-
-/*
-    static uint32_t bgPrintTimer = hw.system.GetNow();
-    if ((hw.system.GetNow() - bgPrintTimer) > 1000)
-    {
-        hw.PrintLine("%d\n", ledCv);
-        bgPrintTimer = hw.system.GetNow();
-    }
-*/ //debug print
 
             pwmBfr[0] = 0x00;
             pwmBfr[1] = 0x00;
@@ -154,5 +145,4 @@ void shapeIndicatorWrite(SpiHandle &spi_handle, uint8_t controlSig)
 
 
     System::DelayUs(200);
-    //_spi_dev->endTransaction();
 }
