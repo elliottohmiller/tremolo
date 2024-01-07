@@ -1,6 +1,6 @@
 <h1 align="center">DAISY SEED, TREMOLO FX PEDAL</h1>
 
-Please find the project final report here: [Daisy Tremolo, Final Project Report](https://docs.google.com/document/d/1xhcLHC9XNUzQGN74nN5Q5USJfIcwyZLTP7rAOwXhFzY/edit?usp=sharing)
+Please find the project final report here: [Daisy Tremolo, Final Project Report](https://github.com/elliottohmiller/tremolo/blob/master/Final%20Project%20Report%20-%20Making%20Embedded%20Systems%20-%20Elliott%20Miller.pdf)
 
 For more Electro-Smith Daisy info, check out the [Getting Started Wiki page!](https://github.com/electro-smith/DaisyWiki/wiki)
 
