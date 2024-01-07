@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2024 elliottohmiller
+Copyright (c) 2020 andrewikenberry
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Portions of this software are copyright of their respective authors and released
+under the MIT license:
+
+seed/tremolo Copyright 2024 elliottohmiller: https://github.com/elliottohmiller/tremolo/tree/master/seed/tremolo/LICENSE
+
+Portions of this software are dedicated to public domain: 
+libDaisy/src/reusable logicalelegance : https://github.com/eleciawhite/reusable/blob/master/LICENSE 
